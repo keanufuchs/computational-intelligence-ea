@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="de">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>TSP mit Evolutionären Algorithmen</title>
+
+    <link rel="stylesheet" href="dist/reset.css">
+    <link rel="stylesheet" href="dist/reveal.css">
+    <link rel="stylesheet" href="dist/theme/dracula.css">
+
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="plugin/highlight/monokai.css">
+
+    <!-- MathJax for mathematical formulas -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --rhk-purple: #6366b3;
+            --rhk-light-blue: #89c2d9;
+            --rhk-green: #b4d67f;
+            --rhk-light-green: #e0f2a1;
+        }
+
+        .reveal {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .reveal h2 {
+            color: var(--rhk-light-blue);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .reveal h3 {
+            color: var(--rhk-green);
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .col {
+            flex: 1;
+        }
+
+        table.small-table {
+            font-size: 0.5em;
+        }
+
+        .small-text {
+            font-size: 0.6em;
+        }
+
+        /* Enhance lists */
+        .reveal ul,
+        .reveal ol {
+            margin-top: 20px;
+        }
+
+        .reveal li {
+            margin-bottom: 15px;
+        }
+
+        /* Code blocks */
+        .reveal pre {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        /* Images */
+        .reveal img {
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Tables */
+        .reveal table {
+            border-collapse: collapse;
+            margin: 20px auto;
+        }
+
+        .reveal table th {
+            background: var(--rhk-purple);
+            color: white;
+            padding: 10px;
+        }
+
+        .reveal table td {
+            padding: 8px;
+            border: 1px solid #444;
+        }
+
+        /* Fragment animations */
+        .reveal .fragment {
+            transition: all 0.3s ease;
+        }
+
+        /* Smaller city names on slide 5 */
+        .city-list-small {
+            font-size: 0.75em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <!-- 1. Titelfolie -->
+            <section data-background-gradient="linear-gradient(135deg, #1e1e2e 0%, #2a2a4a 100%)">
+                <div style="margin-bottom: 40px;">
+                    <img src="images/rhk_logo.png" alt="Rheinische Hochschule Köln"
+                        style="max-width: 400px; background: white; padding: 20px; border-radius: 10px;">
+                </div>
+                <h2 style="color: #a8dadc;">Lösung des Traveling Salesman Problems</h2>
+                <h3 style="color: #89c2d9;">mittels Evolutionärer Algorithmen</h3>
+                <p style="margin-top: 30px;">
+                    <small style="color: #bee5eb;">Benchmark-Analyse & statistische Auswertung</small>
+                </p>
+                <p class="small-text" style="color: #b8c5d1; margin-top: 40px;">Computational Intelligence
+                    Portfolio-Prüfung</p>
+            </section>
+
+            <!-- 2. Agenda -->
+            <section>
+                <h2>Agenda</h2>
+                <ol style="line-height: 1.8;">
+                    <li class="fragment">Einleitung & Zielsetzung</li>
+                    <li class="fragment">Untersuchungsgegenstand (TSP)</li>
+                    <li class="fragment">Problembeschreibung (Rheinland-Instanz)</li>
+                    <li class="fragment">Lösungsansatz: Evolutionärer Algorithmus</li>
+                    <li class="fragment">Ergebnisse & Statistische Auswertung</li>
+                    <li class="fragment">Zusammenfassung & Ausblick</li>
+                </ol>
+            </section>
+
+            <!-- 3. Einleitung -->
+            <section>
+                <section>
+                    <h2>1. Einleitung & Zielsetzung</h2>
+                    <p><strong>Ziel:</strong> Finden der kürzesten Rundreise durch \(n\) Städte.</p>
+                    <p class="fragment">Minimierung der Gesamtdistanz (Kostenfunktion).</p>
+                    <div class="fragment">
+                        <p><strong>Warum EA?</strong></p>
+                        <ul>
+                            <li>Traveling Salesman Problem ist NP-hart</li>
+                            <li>Analytische Lösungen skalieren nicht</li>
+                            <li>Heuristiken liefern "sehr gute", nicht perfekte Lösungen in kurzer Zeit</li>
+                        </ul>
+                    </div>
+                </section>
+            </section>
+
+            <!-- 4. Untersuchungsgegenstand -->
+            <section>
+                <h2>2. Untersuchungsgegenstand</h2>
+                <p>Das Traveling Salesman Problem (TSP)</p>
+                <ul>
+                    <li>Kombinatorisches Optimierungsproblem</li>
+                    <li>Suchraum wächst faktoriell \(\frac{(n-1)!}{2}\)</li>
+                </ul>
+                <table class="small-table fragment">
+                    <thead>
+                        <tr>
+                            <th>Städte (n)</th>
+                            <th>Mögliche Routen</th>
+                            <th>Rechenzeit (1 Mio/s)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>6</td>
+                            <td>60</td>
+                            <td>
+                                < 1 ms</td>
+                        </tr>
+                        <tr style="background-color: rgba(179, 195, 113, 0.2);">
+                            <td><strong>8</strong></td>
+                            <td><strong>2520</strong></td>
+                            <td><strong>
+                                    < 1 ms</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>10</td>
+                            <td>~181 Tsd.</td>
+                            <td>
+                                < 1 s</td>
+                        </tr>
+                        <tr>
+                            <td>20</td>
+                            <td>~60 Billiarden</td>
+                            <td>~1.900 Jahre</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- 5. Problembeschreibung -->
+            <section>
+                <section>
+                    <h2>3. Problembeschreibung</h2>
+                    <h3>Die Rheinland-Instanz (\(n=8\))</h3>
+                    <div class="container">
+                        <div class="col">
+                            <ul class="city-list-small">
+                                <li>Köln</li>
+                                <li>Bonn</li>
+                                <li>Düsseldorf</li>
+                                <li>Aachen</li>
+                                <li>Wuppertal</li>
+                                <li>Leverkusen</li>
+                                <li>Düren</li>
+                                <li>Euskirchen</li>
+                            </ul>
+                        </div>
+                        <div class="col">
+                            <img src="images/01_staedte_streudiagramm.png" alt="Städte Streudiagramm"
+                                style="max-height: 400px;">
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <h3>Distanzmatrix</h3>
+                    <p class="small-text">Symmetrische Matrix, normalisierte Distanzen (Heatmap-Visualisierung)</p>
+                    <img src="images/distanzmatrix_heatmap.png" alt="Distanzmatrix Heatmap"
+                        style="max-width: 90%; max-height: 500px; margin: 20px auto; display: block;">
+                    <!--<table class="small-table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Köln</th>
+                                <th>Bonn</th>
+                                <th>Düsseldorf</th>
+                                <th>Aachen</th>
+                                <th>Wuppertal</th>
+                                <th>Leverkusen</th>
+                                <th>Düren</th>
+                                <th>Euskirchen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Köln</td>
+                                <td>0.00</td>
+                                <td>0.24</td>
+                                <td>0.34</td>
+                                <td>0.89</td>
+                                <td>0.39</td>
+                                <td>0.11</td>
+                                <td>0.49</td>
+                                <td>0.32</td>
+                            </tr>
+                            <tr>
+                                <td>Bonn</td>
+                                <td>0.24</td>
+                                <td>0.00</td>
+                                <td>0.58</td>
+                                <td>1.02</td>
+                                <td>0.53</td>
+                                <td>0.33</td>
+                                <td>0.62</td>
+                                <td>0.32</td>
+                            </tr>
+                            <tr>
+                                <td>Düsseldorf</td>
+                                <td>0.34</td>
+                                <td>0.58</td>
+                                <td>0.00</td>
+                                <td>0.83</td>
+                                <td>0.41</td>
+                                <td>0.28</td>
+                                <td>0.51</td>
+                                <td>0.56</td>
+                            </tr>
+                            <tr>
+                                <td>Aachen</td>
+                                <td>0.89</td>
+                                <td>1.02</td>
+                                <td>0.83</td>
+                                <td>0.00</td>
+                                <td>1.20</td>
+                                <td>0.94</td>
+                                <td>0.40</td>
+                                <td>0.71</td>
+                            </tr>
+                            <tr>
+                                <td>Wuppertal</td>
+                                <td>0.39</td>
+                                <td>0.53</td>
+                                <td>0.41</td>
+                                <td>1.20</td>
+                                <td>0.00</td>
+                                <td>0.29</td>
+                                <td>0.84</td>
+                                <td>0.71</td>
+                            </tr>
+                            <tr>
+                                <td>Leverkusen</td>
+                                <td>0.11</td>
+                                <td>0.33</td>
+                                <td>0.28</td>
+                                <td>0.94</td>
+                                <td>0.29</td>
+                                <td>0.00</td>
+                                <td>0.56</td>
+                                <td>0.43</td>
+                            </tr>
+                            <tr>
+                                <td>Düren</td>
+                                <td>0.49</td>
+                                <td>0.62</td>
+                                <td>0.51</td>
+                                <td>0.40</td>
+                                <td>0.84</td>
+                                <td>0.56</td>
+                                <td>0.00</td>
+                                <td>0.34</td>
+                            </tr>
+                            <tr>
+                                <td>Euskirchen</td>
+                                <td>0.32</td>
+                                <td>0.32</td>
+                                <td>0.56</td>
+                                <td>0.71</td>
+                                <td>0.71</td>
+                                <td>0.43</td>
+                                <td>0.34</td>
+                                <td>0.00</td>
+                            </tr>
+                        </tbody>
+                    </table>-->
+
+                </section>
+            </section>
+
+            <!-- 6. Lösungsansätze -->
+            <section>
+                <section>
+                    <h2>4. Lösungsansatz</h2>
+                    <h3>Evolutionärer Algorithmus (EA)</h3>
+                    <p>Biologisch inspiriertes Verfahren zur globalen Optimierung.</p>
+                    <pre><code class="python" data-trim>
+INITIALISIERUNG (Population zufälliger Routen)
+WHILE (Abbruchkriterium nicht erfüllt):
+    EVALUATION (Berechne Fitness / Streckenlänge)
+    SELEKTION (Wähle Eltern für nächste Gen.)
+    REKOMBINATION (Crossover)
+    MUTATION (Zufällige Veränderung)
+    ERSETZUNG (Neue Generation)
+                        </code></pre>
+                </section>
+
+                <section>
+                    <h3>Encoding</h3>
+                    <p><strong>Permutations-Kodierung</strong></p>
+                    <p class="small-text">Genotyp: Liste von Stadt-Indizes | Phänotyp: Die tatsächliche Route</p>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <img src="images/02_genotyp_phaenotyp_route.png" alt="Genotyp Phänotyp"
+                            style="max-height: 400px; max-width: 85%;">
+                    </div>
+                </section>
+            </section>
+
+            <!-- 7. Komponenten & Parameter -->
+            <section>
+                <section>
+                    <h2 style="font-size: 1.5em;">Komponenten & Parameter</h2>
+                    <ul style="line-height: 1.5; font-size: 0.85em;">
+                        <li class="fragment"><strong style="color: var(--rhk-green);">Selektion:</strong> Turnierauswahl
+                            (Tournament Size = 3) + Elitismus</li>
+                        <li class="fragment"><strong style="color: var(--rhk-green);">Crossover:</strong> Order
+                            Crossover (OX1) - Erhält relative Reihenfolge</li>
+                        <li class="fragment"><strong style="color: var(--rhk-green);">Mutation:</strong> Invertierende
+                            Mutation (Teilstrecke umdrehen)</li>
+                    </ul>
+                    <div class="fragment"
+                        style="margin-top: 20px; padding: 15px; background: rgba(99, 102, 179, 0.3); border-radius: 10px;">
+                        <p style="margin: 0; font-size: 0.9em;"><strong>Gewählte Parameter:</strong></p>
+                        <p style="margin: 8px 0 0 0; font-size: 0.8em;">Populationsgröße: 50 | Generationen: 20 |
+                            Mutationsrate: 10%</p>
+                    </div>
+                </section>
+
+                <section>
+                    <h3>Selektion: Turnierauswahl</h3>
+                    <img src="images/04_selektion_vergleich.png" alt="Selektion Vergleich" style="max-height: 400px;">
+                    <p class="small-text">Vergleich von Fitness (links) und Selektionshäufigkeit (rechts).</p>
+                </section>
+
+                <section>
+                    <h3>Crossover: Order Crossover</h3>
+                    <img src="images/06_crossover_eltern_kind.png" alt="Order Crossover" style="max-height: 400px;">
+                    <p class="small-text">Erhält Sequenzen, valid für Permutationen.</p>
+                </section>
+
+                <section>
+                    <h3>Mutation: Inversion</h3>
+                    <img src="images/05_mutation_vorher_nachher.png" alt="Mutation" style="max-height: 400px;">
+                    <p class="small-text">Verhindert Stagnation in lokalen Optima.</p>
+                </section>
+            </section>
+
+            <!-- 8. Ergebnisse -->
+            <section>
+                <section>
+                    <h2>5. Ergebnisse</h2>
+                    <h3>Konvergenzverhalten</h3>
+                    <img src="images/07_konvergenz_beste_route.png" alt="Konvergenz" style="max-height: 450px;">
+                    <p class="small-text">Typischer Verlauf: Schnelle Verbesserung zu Beginn, dann Sättigung.</p>
+                </section>
+
+                <section>
+                    <h3>Statistische Absicherung</h3>
+                    <p>Basis: 30 unabhängige Testläufe</p>
+                    <div style="text-align: center;">
+                        <img src="images/10_boxplots_parametervergleich.png" alt="Boxplots"
+                            style="max-height: 600px; max-width: 100%;">
+                    </div>
+                    <p class="small-text" style="margin-top: 20px;">
+                        <strong>Beobachtung:</strong> Sehr geringe Varianz bei kleiner Instanz (\(n=8\)).
+                        Algorithmus findet zuverlässig das globale Optimum.
+                    </p>
+                </section>
+
+                <section>
+                    <h3>Einfluss der Mutationsrate</h3>
+                    <div style="text-align: center;">
+                        <img src="images/11_konvergenzvergleich_mutationsraten.png" alt="Mutationsraten Vergleich"
+                            style="max-height: 600px; max-width: 100%;">
+                    </div>
+                    <p class="small-text" style="margin-top: 10px;">Zu geringe Mutation → verfrühte Konvergenz | Zu hohe
+                        Mutation → zerstört gute Lösungen</p>
+                </section>
+            </section>
+
+            <!-- 9. Zusammenfassung -->
+            <section>
+                <h2>6. Zusammenfassung & Ausblick</h2>
+                <ul>
+                    <li class="fragment"><strong>Ziel erreicht:</strong> EA löst TSP (n=8) zuverlässig.</li>
+                    <li class="fragment"><strong>Methodik:</strong> Statistische Absicherung durch 30 Runs bestätigt
+                        Robustheit.</li>
+                    <li class="fragment"><strong>Kritik:</strong> Instanzgröße sehr klein → wenig Varianz.</li>
+                    <li class="fragment"><strong>Ausblick:</strong>
+                        <ul>
+                            <li>Größere Instanzen (z.B. berlin52)</li>
+                            <li>Andere Crossover-Operatoren (PMX, CX)</li>
+                            <li>Hybridisierung (Memetische Algorithmen)</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- 10. Abschluss -->
+            <section data-background-gradient="linear-gradient(135deg, #1e1e2e 0%, #2a2a4a 100%)">
+                <h2 style="color: #a8dadc; margin-bottom: 40px;">Vielen Dank für Ihre Aufmerksamkeit!</h2>
+                <div style="margin-top: 60px;">
+                    <img src="images/rhk_logo.png" alt="Rheinische Hochschule Köln"
+                        style="max-width: 300px; background: white; padding: 15px; border-radius: 10px;">
+                </div>
+                <p style="margin-top: 50px; color: #b8c5d1;">
+                    <small>Fragen?</small>
+                </p>
+            </section>
+
+
+        </div>
+    </div>
+
+    <script src="dist/reveal.js"></script>
+    <script src="plugin/notes/notes.js"></script>
+    <script src="plugin/markdown/markdown.js"></script>
+    <script src="plugin/highlight/highlight.js"></script>
+    <script>
+        // More info about initialization & config:
+        // - https://revealjs.com/initialization/
+        // - https://revealjs.com/config/
+        Reveal.initialize({
+            hash: true,
+            slideNumber: 'c/t',
+            transition: 'convex',
+            transitionSpeed: 'default',
+            controlsTutorial: true,
+            progress: true,
+            center: true,
+
+            // Configure MathJax
+            math: {
+                mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js',
+                config: 'TeX-AMS_HTML-full'
+            },
+
+            // Learn about plugins: https://revealjs.com/plugins/
+            plugins: [RevealMarkdown, RevealHighlight, RevealNotes]
+        });
+    </script>
+</body>
+
+</html>
